@@ -15,8 +15,8 @@
     "experimentalDecorators": true,
     "outDir": "dist",
     "types": [
-      "node"
+      "node", "vitest/globals"
     ]
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts", "test/**/*.ts", "*.config.ts"]
 }
