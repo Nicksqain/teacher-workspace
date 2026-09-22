@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Расписание — Teacher Workspace</title>
+    <link rel="stylesheet" href="./schedule.css" />
+  </head>
+  <body>
+    <main>
+      <header class="schedule-header">
+        <div>
+          <h1>Расписание</h1>
+          <p class="week-label">21–27 сентября 2026</p>
+        </div>
+        <nav aria-label="Выбор недели">
+          <button type="button">← Предыдущая</button>
+          <button type="button">Следующая →</button>
+        </nav>
+      </header>
+      <p id="schedule-status" role="status"></p>
+      <div
+        class="table-scroll"
+        tabindex="0"
+        role="region"
+        aria-label="Расписание на неделю"
+      >
+        <table>
+          <caption>
+            Занятия на неделю
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Время</th>
+              <th scope="col" data-date="2026-09-21">Пн, 21</th>
+              <th scope="col" data-date="2026-09-22">Вт, 22</th>
+              <th scope="col" data-date="2026-09-23">Ср, 23</th>
+              <th scope="col" data-date="2026-09-24">Чт, 24</th>
+              <th scope="col" data-date="2026-09-25">Пт, 25</th>
+              <th scope="col" class="weekend" data-date="2026-09-26">Сб, 26</th>
+              <th scope="col" class="weekend" data-date="2026-09-27">Вс, 27</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">8:30–9:50</th>
+              <td>
+                <div class="lesson">
+                  <strong>Математика</strong>
+                  <span>Группа ИБ-26</span>
+                  <span class="room">Кабинет 12</span>
+                </div>
+              </td>
+              <td class="empty">—</td>
+              <td>
+                <div class="lesson lesson--green">
+                  <strong>ИКТ</strong>
+                  <span>Группа ПР1-26</span>
+                  <span class="room">Кабинет 10</span>
+                </div>
+              </td>
+              <td class="empty">—</td>
+              <td>
+                <div class="lesson lesson--purple">
+                  <strong>Программирование</strong>
+                  <span>Группа ПР1-24</span>
+                  <span class="room">Кабинет 11</span>
+                </div>
+              </td>
+              <td class="empty weekend">—</td>
+              <td class="empty weekend">—</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+    <script type="module" src="./schedule.js"></script>
+  </body>
+</html>

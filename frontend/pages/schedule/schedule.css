@@ -11,15 +11,16 @@
 }
 
 body {
- margin: 0;
- padding: 40px 24px;
- background: radial-gradient(
-    ellipse at top left,
-    rgb(112 92 255 / 14%),
-    transparent 55%
- ),
- #10131c;
- min-height: 100vh;
+  margin: 0;
+  padding: 40px 24px;
+  background:
+    radial-gradient(
+      ellipse at top left,
+      rgb(112 92 255 / 14%),
+      transparent 55%
+    ),
+    #10131c;
+  min-height: 100vh;
 }
 
 main {
@@ -54,10 +55,10 @@ h1 {
   color: #a4aec3;
 }
 nav {
-padding: 6px;
-border: 1px solid #343b50;
-border-radius: 14px;
-background: #1a1f2d;
+  padding: 6px;
+  border: 1px solid #343b50;
+  border-radius: 14px;
+  background: #1a1f2d;
 }
 
 button {
@@ -225,12 +226,14 @@ td {
   color: #304e8f;
   font-size: 12px;
   overflow-wrap: anywhere;
-  transition: transform 0.15s ease, box-shadow 0.15s ease
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .lesson:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(50, 75, 144, 0.1); 
+  box-shadow: 0 4px 12px rgba(50, 75, 144, 0.1);
 }
 
 .lesson strong {
