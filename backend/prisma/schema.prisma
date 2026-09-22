@@ -53,3 +53,18 @@ model Permission {
 
   @@map("permissions")
 }
+
+model Lesson {
+  id              String       @id @default(uuid())
+  subject         String       
+  groupName        String       @map("group_name")
+  room            String
+  startsAt        DateTime     @map("starts_at")
+  endsAt          DateTime     @map("ends_at")
+
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt  @map("updated_at")
+
+  @@index([startsAt])
+  @@map("lessons")
+}
