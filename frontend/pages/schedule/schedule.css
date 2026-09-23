@@ -519,3 +519,138 @@ tbody tr:hover td {
     padding: 8px;
   }
 }
+
+/* Editing a saved lesson */
+.lesson[role='button'] {
+  cursor: pointer;
+  transition: box-shadow 0.15s ease;
+}
+.lesson[role='button']:hover {
+  box-shadow: 0 3px 12px #21304720;
+}
+.lesson[role='button']:focus-visible {
+  outline: 3px solid #7a75e7;
+  outline-offset: 2px;
+}
+.lesson + .lesson {
+  margin-top: 10px;
+}
+#lesson-editor {
+  width: min(580px, calc(100% - 24px));
+  max-height: 90vh;
+  padding: 28px;
+  border: 1px solid #dce3ee;
+  border-radius: 18px;
+  color: #213047;
+  background: white;
+  box-shadow: 0 24px 80px #0004;
+}
+#lesson-editor::backdrop {
+  background: #10182799;
+  backdrop-filter: blur(3px);
+}
+.editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.editor-header h2 {
+  margin: 0;
+  font-size: 22px;
+}
+.editor-date {
+  color: #69768c;
+  font-size: 12px;
+  margin: 0 0 6px;
+}
+#editor-close {
+  background: #f0f3f8;
+  color: #536078;
+  border: 0;
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  font-size: 24px;
+}
+.editor-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 18px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.editor-field input,
+.editor-field textarea,
+.editor-field select {
+  width: 100%;
+  min-width: 0;
+  padding: 11px 12px;
+  font: inherit;
+  font-weight: 400;
+  color: #213047;
+  background: #fbfcfe;
+  border: 1px solid #cdd6e5;
+  border-radius: 9px;
+}
+.editor-field textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+.editor-field textarea:focus-visible,
+.editor-field select:focus-visible {
+  outline: 3px solid #7a75e7;
+  outline-offset: 2px;
+}
+.editor-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+#editor-status {
+  min-height: 22px;
+  margin: 0 0 16px;
+  color: #a02d40;
+  font-size: 13px;
+}
+.editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.editor-primary {
+  background: #6254bf;
+  border-color: #6254bf;
+  color: white;
+}
+.editor-primary:hover {
+  background: #5043a5;
+}
+#lesson-form button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+@media (max-width: 500px) {
+  #lesson-editor {
+    padding: 20px;
+  }
+  .editor-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .editor-header h2 {
+    font-size: 20px;
+  }
+}
+@media print {
+  #lesson-editor {
+    display: none !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lesson[role='button'] {
+    transition: none;
+  }
+}

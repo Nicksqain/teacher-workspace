@@ -1,3 +1,5 @@
+import { Get, Req, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { BadRequestException, Body, Controller, HttpCode, Inject, Post } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 
@@ -7,6 +9,12 @@ export class AuthController {
         @Inject(AuthService)
         private readonly authService: AuthService
     ) {}
+
+    @Get('me')
+    @UseGuards(JwtAuthGuard)
+    me(@Req() request: { user: { id: string; email: string; role: string } }) {
+        return request.user;
+    }
 
     @Post('login')
     @HttpCode(200)

@@ -159,7 +159,6 @@
   }
 }
 
-/* Учитываем настройку уменьшения анимации */
 @media (prefers-reduced-motion: reduce) {
   input,
   button {

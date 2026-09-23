@@ -21,7 +21,7 @@
           <h2>Вторник</h2>
           <p>22 сентября 2026 · 1 семестр · 2026–2027 учебный год</p>
         </div>
-        <span class="source-badge">Из Excel</span>
+        <span class="source-badge">Из базы</span>
       </section>
       <section class="schedule-panel" aria-label="Расписание по группам">
         <div class="toolbar">
@@ -73,10 +73,47 @@
           Группа не найдена. Измените запрос или выберите «Все курсы».
         </p>
         <footer class="panel-footer">
-          <span>Источник: расписание 22.09.2026 .xlsx</span
+          <span>Занятия из базы · исходное расписание: 22.09.2026</span
           ><span>7 пар · 08:30–19:20</span>
         </footer>
       </section>
     </main>
+    <dialog id="lesson-editor" aria-labelledby="editor-title">
+      <form id="lesson-form">
+        <header class="editor-header">
+          <div>
+            <p class="editor-date">22 сентября 2026</p>
+            <h2 id="editor-title">Редактировать занятие</h2>
+          </div>
+          <button type="button" id="editor-close" aria-label="Закрыть">
+            ×
+          </button>
+        </header>
+        <label class="editor-field"
+          >Предмет / модуль и преподаватель
+          <textarea name="subject" rows="4" required></textarea>
+        </label>
+        <label class="editor-field"
+          >Группа<select name="groupName" required></select
+        ></label>
+        <div class="editor-grid">
+          <label class="editor-field"
+            >Аудитория<input name="room" required
+          /></label>
+          <label class="editor-field"
+            >Пара<select name="slot" required></select
+          ></label>
+        </div>
+        <p id="editor-status" role="status"></p>
+        <footer class="editor-actions">
+          <button type="button" id="editor-cancel" class="button">
+            Отмена
+          </button>
+          <button type="submit" id="editor-save" class="button editor-primary">
+            Сохранить
+          </button>
+        </footer>
+      </form>
+    </dialog>
   </body>
 </html>

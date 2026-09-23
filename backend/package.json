@@ -14,7 +14,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "vitest run --config vitest.config.e2e.ts",
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx prisma/seed.ts",
+    "import:schedule": "tsx prisma/import-schedule.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.17",
