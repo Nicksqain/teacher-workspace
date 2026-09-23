@@ -62,9 +62,42 @@ model Lesson {
   startsAt        DateTime     @map("starts_at")
   endsAt          DateTime     @map("ends_at")
 
+  studyPlanId String?    @map("study_plan_id")
+  studyPlan   StudyPlan? @relation(fields: [studyPlanId],references: [id],onDelete: Restrict)
+
+  academicHours Int? @map("academic_hours")
+
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt  @map("updated_at")
 
   @@index([startsAt])
   @@map("lessons")
+}
+
+model StudyGroup {
+  id        String  @id @default(uuid())
+  name      String  @unique
+  plans     StudyPlan[]
+  @@map("study_groups")
+}
+
+model Subject {
+  id         String     @id @default(uuid())
+  name       String    @unique
+  plans      StudyPlan[]
+  @@map("subjects")
+}
+
+
+model StudyPlan {
+  id            String        @id  @default(uuid())
+  groupId       String        @map("group_id")
+  group         StudyGroup    @relation(fields: [groupId], references: [id])
+  subjectId     String        @map("subject_id")
+  subject       Subject       @relation(fields: [subjectId], references: [id])
+  period        String
+  totalHours    Int           @map("total_hours")
+  lessons       Lesson[]
+  @@unique([groupId, subjectId, period])
+  @@map("study_plans") 
 }
