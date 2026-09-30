@@ -5,6 +5,7 @@ import { PrismaModule } from "./core/database/prisma.module";
 import { AuthModule } from "./auth/auth.module";
 import { UsersModule } from "./modules/users/users.module";
 import { ScheduleModule } from "./modules/shedule/schedule.module";
+import { StudyPlanModule } from "./modules/study_plans/stude-plans.module";
 import { AppController } from "./app.controller";
 
 @Module({
@@ -16,7 +17,8 @@ import { AppController } from "./app.controller";
     PrismaModule,
     AuthModule,
     UsersModule,
-    ScheduleModule
+    ScheduleModule,
+    StudyPlanModule
   ],
   controllers: [
     AppController,

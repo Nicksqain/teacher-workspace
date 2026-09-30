@@ -6,21 +6,64 @@
     <title>Расписание колледжа — 22 сентября</title>
     <link rel="stylesheet" href="./schedule.css" />
     <script type="module" src="./schedule.js"></script>
+    <link rel="icon" href="data:," />
   </head>
   <body>
+    <dialog id="excel-dialog" aria-labelledby="excel-title">
+      <h2 id="excel-title">Импортировать расписание</h2>
+      <p>
+        Файл на текущую дату расписания. Пустые ячейки ничего не удаляют.
+        Совпадающие группа и начало пары обновляются.
+      </p>
+      <p>
+        В таблице: группы — строка 3 начиная с D, время — столбец C
+        (08:30–09:50), занятия — начиная со строки 4. Можно загрузить файл,
+        полученный через экспорт.
+      </p>
+      <input
+        id="excel-file"
+        type="file"
+        accept=".xlsx"
+        aria-label="Файл расписания Excel"
+      />
+      <p id="excel-status" role="status"></p>
+      <div id="excel-preview"></div>
+      <div class="excel-actions">
+        <button id="excel-cancel" type="button">Закрыть</button>
+        <button id="excel-confirm" type="button" disabled>
+          Сохранить в базу
+        </button>
+      </div>
+    </dialog>
     <main class="workspace">
       <header class="page-header">
         <div>
           <h1>Расписание колледжа</h1>
         </div>
-        <button id="print" class="button" type="button">Распечатать</button>
+        <div class="header-actions">
+          <details class="excel-menu">
+            <summary class="button">Excel</summary>
+            <div class="excel-dropdown">
+              <button id="excel-import" type="button">
+                Импортировать .xlsx
+              </button>
+              <button id="excel-export" type="button">
+                Экспортировать .xlsx
+              </button>
+            </div>
+          </details>
+        </div>
       </header>
       <section class="day-banner" aria-label="Дата расписания">
         <div class="date-tile"><strong>22</strong><span>СЕНТЯБРЯ</span></div>
-        <div>
+        <div class="day-details">
           <h2>Вторник</h2>
           <p>22 сентября 2026 · 1 семестр · 2026–2027 учебный год</p>
         </div>
+        <label class="schedule-date-picker" for="schedule-date">
+          <span>Выбрать дату</span>
+          <input id="schedule-date" type="date" required />
+        </label>
       </section>
       <p class="conflict-legend">
         <span class="conflict-badge conflict-teacher">⚠ Преподаватель</span> —

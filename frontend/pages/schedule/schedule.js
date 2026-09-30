@@ -25,7 +25,6 @@ function element(tag, text, className) {
 
 function render() {
   if (!schedule) return;
-  // The API request may still be loading when a filter is clicked.
   if (
     schedule.groups.some((group) =>
       group.lessons.some((slot) => !Array.isArray(slot)),
@@ -173,9 +172,6 @@ for (const button of document.querySelectorAll('[data-course]')) {
   });
 }
 search.addEventListener('input', render);
-document
-  .querySelector('#print')
-  .addEventListener('click', () => window.print());
 
 async function init() {
   const token = sessionStorage.getItem('accessToken');
@@ -195,6 +191,14 @@ async function init() {
     }
 
     schedule = await fileResponse.json();
+    const savedDate = sessionStorage.getItem('scheduleDate');
+    if (
+      savedDate &&
+      /^\d{4}-\d{2}-\d{2}$/.test(savedDate) &&
+      Number.isFinite(Date.parse(savedDate))
+    )
+      schedule.date = savedDate;
+    updateScheduleDate();
 
     const response = await fetch('http://localhost:3000/schedule', {
       headers: {
@@ -265,6 +269,41 @@ function slotDates(slot) {
     endsAt: `${schedule.date}T${end}:00+05:00`,
   };
 }
+
+function updateScheduleDate() {
+  const date = new Date(`${schedule.date}T12:00:00+05:00`);
+  const format = (options) =>
+    new Intl.DateTimeFormat('ru-RU', {
+      timeZone: 'Asia/Qyzylorda',
+      ...options,
+    }).format(date);
+  document.querySelector('#schedule-date').value = schedule.date;
+  document.querySelector('.date-tile strong').textContent = format({
+    day: 'numeric',
+  });
+  document.querySelector('.date-tile span').textContent = format({
+    month: 'long',
+  });
+  document.querySelector('.day-banner h2').textContent = format({
+    weekday: 'long',
+  });
+  const label = format({ day: 'numeric', month: 'long', year: 'numeric' });
+  document.querySelector('.day-banner p').textContent = label;
+  document.querySelector('.editor-date').textContent = label;
+  table.caption.textContent = `Расписание на ${label}. Столбцы — группы, строки — пары.`;
+  document.querySelector('.panel-footer span').textContent =
+    `Занятия из базы · ${label}`;
+  document.title = `Расписание колледжа — ${label}`;
+}
+
+document.querySelector('#schedule-date').addEventListener('change', (event) => {
+  if (!schedule || !event.target.value || !event.target.validity.valid) return;
+  schedule.date = event.target.value;
+  sessionStorage.setItem('scheduleDate', schedule.date);
+  updateScheduleDate();
+  arrangeLessons();
+  render();
+});
 
 function arrangeLessons() {
   refreshTeacherFilter();
@@ -582,6 +621,74 @@ function chooseTeacher(index) {
   closeTeacherPopup();
 }
 
+const exportButton = document.querySelector('#excel-export');
+exportButton.addEventListener('click', async () => {
+  const ids = [
+    ...new Set(
+      [...table.querySelectorAll('.lesson[data-id]')].map(
+        (card) => card.dataset.id,
+      ),
+    ),
+  ];
+
+  if (!ids.length) {
+    status.textContent = 'Нет занятий для экспорта';
+    return;
+  }
+
+  const token = sessionStorage.getItem('accessToken');
+
+  if (!token) {
+    window.location.href = '../login/index.html';
+    return;
+  }
+
+  exportButton.disabled = true;
+  exportButton.textContent = 'Подготовка файла..';
+
+  try {
+    const response = await fetch(
+      'http://localhost:3000/schedule/excel/export',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+
+        body: JSON.stringify({
+          date: schedule.date,
+          ids,
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || `Ошибка экпорта: ${response.status}`);
+    }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.download = `schedule-${schedule.date}.xlsx`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    document.querySelector('.excel-menu').open = false;
+    status.textContent = 'Файл распсиания выгружен';
+  } catch (error) {
+    status.textContent = error.message;
+  } finally {
+    exportButton.disabled = false;
+    exportButton.textContent = 'Экспортировать .xlsx';
+  }
+});
+
 teacherFilter.addEventListener('focus', showTeacherPopup);
 teacherFilter.addEventListener('click', showTeacherPopup);
 teacherFilter.addEventListener('input', () => {
@@ -624,4 +731,213 @@ teacherClear.addEventListener('click', () => {
 document.addEventListener('pointerdown', (event) => {
   if (!document.querySelector('#teacher-picker').contains(event.target))
     closeTeacherPopup();
+});
+
+const excelDialog = document.querySelector('#excel-dialog');
+const excelFile = document.querySelector('#excel-file');
+const excelStatus = document.querySelector('#excel-status');
+const excelPreview = document.querySelector('#excel-preview');
+const excelConfirm = document.querySelector('#excel-confirm');
+const excelCancel = document.querySelector('#excel-cancel');
+
+let importRequest = null;
+let importBusy = false;
+
+function setImportBusy(value) {
+  importBusy = value;
+  excelFile.disabled = value;
+  excelCancel.disabled = value;
+  excelConfirm.disabled = value || !importRequest;
+}
+
+async function requestExcel(action, body) {
+  const token = sessionStorage.getItem('accessToken');
+
+  if (!token) throw new Error('Сначала войдите в систему');
+
+  const response = await fetch(
+    `http://localhost:3000/schedule/excel/${action}`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(body),
+    },
+  );
+
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    if (response.status === 401)
+      throw new Error('Сеанс истёк. Войдите повторно.');
+    if (response.status === 403)
+      throw new Error('Импорт доступен только администратору.');
+    throw new Error(result.message || `Ошибка: ${response.status}`);
+  }
+
+  return result;
+}
+
+function readBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => resolve(String(reader.result).split(',')[1]);
+
+    reader.onerror = () => reject(new Error('Не удалось прочитать файл'));
+
+    reader.readAsDataURL(file);
+  });
+}
+
+document.querySelector('#excel-import').addEventListener('click', () => {
+  document.querySelector('.excel-menu').open = false;
+  if (
+    !schedule ||
+    schedule.groups.some((group) =>
+      group.lessons.some((slot) => !Array.isArray(slot)),
+    )
+  ) {
+    status.textContent = 'Дождитесь загрузки расписания.';
+    return;
+  }
+  importRequest = null;
+  excelFile.value = '';
+  excelPreview.replaceChildren();
+  excelStatus.textContent = `Дата импорта: ${schedule.date}. Выберите файл .xlsx до 4 МБ.`;
+  setImportBusy(false);
+  excelDialog.showModal();
+});
+
+excelCancel.addEventListener('click', () => {
+  if (!importBusy) excelDialog.close();
+});
+excelDialog.addEventListener('cancel', (event) => {
+  if (importBusy) event.preventDefault();
+});
+
+excelFile.addEventListener('change', async () => {
+  importRequest = null;
+  excelPreview.replaceChildren();
+  excelStatus.textContent = '';
+  setImportBusy(false);
+  const file = excelFile.files[0];
+  if (!file) return;
+  if (
+    !/\.xlsx$/i.test(file.name) ||
+    !file.size ||
+    file.size > 4 * 1024 * 1024
+  ) {
+    excelStatus.textContent = 'Выберите непустой файл .xlsx размером до 4 МБ.';
+    return;
+  }
+  setImportBusy(true);
+  excelStatus.textContent = 'Подготовка предпросмотра…';
+  try {
+    const request = { date: schedule.date, file: await readBase64(file) };
+    const preview = await requestExcel('preview', request);
+    // Avoid saving lessons that the fixed schedule grid cannot display.
+    for (const row of preview.rows) {
+      if (!schedule.groups.some((group) => group.name === row.groupName)) {
+        throw new Error(
+          `Группа «${row.groupName}» отсутствует в расписании. Проверьте название в файле.`,
+        );
+      }
+      if (
+        !schedule.slots.some(
+          (slot) =>
+            Date.parse(slotDates(slot).startsAt) === Date.parse(row.startsAt),
+        )
+      ) {
+        throw new Error(
+          `Начало занятия группы «${row.groupName}» не совпадает со временем пар расписания.`,
+        );
+      }
+    }
+    const labels = {
+      create: 'Добавить',
+      update: 'Обновить',
+      skip: 'Без изменений',
+    };
+    const time = new Intl.DateTimeFormat('ru-RU', {
+      timeZone: 'Asia/Qyzylorda',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    for (const row of preview.rows) {
+      excelPreview.append(
+        element(
+          'div',
+          `${labels[row.action]} · ${row.groupName} · ${time.format(new Date(row.startsAt))}–${time.format(new Date(row.endsAt))}\n${row.subject}\nАудитория: ${row.room}`,
+          'excel-preview-row',
+        ),
+      );
+    }
+    const { create, update, skip } = preview.counts;
+    excelStatus.textContent = `Добавить: ${create} · Обновить: ${update} · Без изменений: ${skip}`;
+    importRequest = { ...request, fingerprint: preview.fingerprint };
+  } catch (error) {
+    excelStatus.textContent =
+      error instanceof TypeError
+        ? 'Нет связи с сервером. Повторите выбор файла.'
+        : error.message;
+  } finally {
+    setImportBusy(false);
+  }
+});
+
+excelConfirm.addEventListener('click', async () => {
+  if (importBusy || !importRequest) return;
+  setImportBusy(true);
+  excelStatus.textContent = 'Сохранение…';
+  try {
+    const counts = await requestExcel('import', importRequest);
+    if (!Array.isArray(counts.lessons) || !counts.date) {
+      throw new Error(
+        'Сервер не вернул сохранённое расписание. Перезапустите сервер и повторите импорт.',
+      );
+    }
+    const dayStart = Date.parse(`${counts.date}T00:00:00+05:00`);
+    allLessons = [
+      ...allLessons.filter((lesson) => {
+        const start = Date.parse(lesson.startsAt);
+        return start < dayStart || start >= dayStart + 86400000;
+      }),
+      ...counts.lessons,
+    ];
+    schedule.date = counts.date;
+    sessionStorage.setItem('scheduleDate', schedule.date);
+    selectedCourse = 'all';
+    search.value = '';
+    teacherFilter.value = '';
+    teacherClear.hidden = true;
+    closeTeacherPopup();
+    for (const button of document.querySelectorAll('[data-course]')) {
+      button.setAttribute(
+        'aria-pressed',
+        String(button.dataset.course === 'all'),
+      );
+    }
+    updateScheduleDate();
+    arrangeLessons();
+    render();
+    importRequest = null;
+    excelPreview.replaceChildren();
+    excelFile.value = '';
+    excelStatus.textContent = `Сохранено. Добавлено: ${counts.create} · Обновлено: ${counts.update} · Без изменений: ${counts.skip}`;
+    excelDialog.close();
+    status.textContent += ` · Импорт применён: добавлено ${counts.create}, обновлено ${counts.update}, без изменений ${counts.skip}`;
+    document.querySelector('.table-scroll').scrollLeft = 0;
+  } catch (error) {
+    importRequest = null;
+    excelFile.value = '';
+    excelStatus.textContent =
+      (error instanceof TypeError
+        ? 'Нет связи с сервером. Результат сохранения неизвестен.'
+        : error.message) + ' Выберите файл заново для нового предпросмотра.';
+  } finally {
+    setImportBusy(false);
+  }
 });

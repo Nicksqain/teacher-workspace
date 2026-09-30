@@ -1,3 +1,4 @@
+import { ScheduleExcelService } from './schedule-excel.service';
 import {
   Body,
   Controller,
@@ -22,7 +23,19 @@ export class ScheduleController {
     constructor(
         @Inject(ScheduleService)
         private readonly schedule: ScheduleService,
+        @Inject(ScheduleExcelService) private readonly excel: ScheduleExcelService,
     ) {}
+
+    @Post('excel/preview')
+    @Roles('ADMIN')
+    preview(@Body() body: unknown) { return this.excel.preview(body); }
+
+    @Post('excel/import')
+    @Roles('ADMIN')
+    importExcel(@Body() body: unknown) { return this.excel.commit(body); }
+
+    @Post('excel/export')
+    exportExcel(@Body() body: unknown) { return this.excel.export(body); }
 
     @Get()
     findAll() {
