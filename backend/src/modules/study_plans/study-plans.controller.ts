@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Inject, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Inject, Post, Query, UseGuards, Param, ParseUUIDPipe, Req } from "@nestjs/common";
+import { StudyPlanEditService } from './study-plan-edit.service';
 import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../../auth/guards/roles.guard";
 import { Roles } from "../../auth/decorators/roles.decorator";
@@ -10,6 +11,7 @@ import { StudyPlanExcelService } from "./study-plan-excel.service";
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class StudyPlanController {
     constructor(
+        @Inject(StudyPlanEditService) private readonly editor: StudyPlanEditService,
         @Inject(StudyPlanService)
         private readonly plans: StudyPlanService,
         @Inject(StudyPlanExcelService)
@@ -19,6 +21,17 @@ export class StudyPlanController {
     @Get() 
     findAll(@Query('groupId') groupId?: string) {
         return this.plans.findAll(groupId);
+    }
+
+    @Post('edit/:kind/:id')
+    @Roles('ADMIN')
+    edit(@Param('kind') kind: string, @Param('id', new ParseUUIDPipe()) id: string, @Body() body: unknown, @Req() req: {user: {id: string}}) {
+        return this.editor.update(kind, id, body, req.user.id);
+    }
+
+    @Get('history/:kind/:id')
+    history(@Param('kind') kind: string, @Param('id', new ParseUUIDPipe()) id: string) {
+        return this.editor.history(kind, id);
     }
 
     @Post('excel/preview')

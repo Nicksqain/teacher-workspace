@@ -3,12 +3,42 @@ import { PrismaService } from '../../core/database/prisma.service';
 import { Prisma } from '../../generated/prisma/client';
 import ExcelJS from 'exceljs';
 
+function isWholeGroupSubject(subject: string) {
+  const name = subject.toLocaleLowerCase('ru').replace(/\s+/g, ' ').trim();
+  return name === 'нвтп' || name === 'начальная военная и технологическая подготовка';
+}
+
 @Injectable()
 export class StudyPlanExcelService {
   constructor(
     @Inject(PrismaService) 
     private readonly prisma: PrismaService
   ) {}
+
+  private async assertNewRup(
+    db: Pick<Prisma.TransactionClient, 'studyPlan' | 'studyPlanAnnualHours'>,
+    academicYear: string,
+    groupNames: string[],
+  ) {
+    const canonical = (name: string) => name.normalize('NFKC')
+      .replace(/[\u2010-\u2015\u2212]/g, '-')
+      .replace(/\s+/g, '').toLocaleLowerCase('ru');
+    const [plans, annual] = await Promise.all([
+      db.studyPlan.findMany({
+        where: { OR: [{ academicYear }, { period: { startsWith: `${academicYear}:` } }] },
+        select: { group: { select: { name: true } } },
+      }),
+      db.studyPlanAnnualHours.findMany({
+        where: { academicYear },
+        select: { group: { select: { name: true } } },
+      }),
+    ]);
+    const existing = new Set([...plans, ...annual].map(item => canonical(item.group.name)));
+    const duplicate = groupNames.find(name => existing.has(canonical(name)));
+    if (duplicate) throw new ConflictException(
+      `РУП группы «${duplicate}» на ${academicYear} уже загружен. Повторный импорт запрещён; откройте существующий учебный план.`,
+    );
+  }
   async preview(body: unknown) {
     if (!body || typeof body !== 'object') {
       throw new BadRequestException('Ожидается объект с файлом');
@@ -192,10 +222,14 @@ export class StudyPlanExcelService {
 
       if ((counts.get(key) ?? 0) > 1) {
         row.warnings.push(
-          'Предмет повторяется: уточните подгруппы или распределение нагрузки',
+          isWholeGroupSubject(row.subject)
+            ? 'НВТП: все преподаватели ведут занятия для всей группы; часы учитываются отдельно.'
+            : 'Предмет повторяется: уточните подгруппы или распределение нагрузки',
         );
       }
     }
+
+    await this.assertNewRup(this.prisma, academicYear, rows.map(row => row.groupName));
 
     return {
       academicYear,
@@ -254,6 +288,8 @@ export class StudyPlanExcelService {
     try {
       return await this.prisma.$transaction(
         async tx => {
+          // Repeat inside the serializable transaction to reject concurrent imports.
+          await this.assertNewRup(tx, preview.academicYear, preview.rows.map(row => row.groupName));
           let plansCreated = 0;
           let assignmentsCreated = 0;
           let annualHoursCreated = 0;
@@ -284,7 +320,8 @@ export class StudyPlanExcelService {
                 groupId: group.id,
                 subjectId: subject.id,
                 academicYear: preview.academicYear,
-                subgroupNumber: rows.length === 2 ? index + 1 : 0,
+                subgroupNumber: rows.length === 2 && !isWholeGroupSubject(row.subject) ? index + 1 : 0,
+                partNumber: isWholeGroupSubject(row.subject) ? index + 1 : 0,
                 teacherLabel: normalize(row.teacher),
                 examHours: row.examHours,
                 consultationHours: row.consultationHours,
@@ -338,7 +375,7 @@ export class StudyPlanExcelService {
               for (const [index, row] of rows.entries()) {
                 if (hours[index] === 0) continue;
 
-                const subgroupNumber = rows.length === 2 ? index + 1 : 0;
+                const subgroupNumber = rows.length === 2 && !isWholeGroupSubject(row.subject) ? index + 1 : 0;
 
                 const subgroup = subgroupNumber
                   ? await tx.studySubgroup.upsert({
@@ -360,6 +397,7 @@ export class StudyPlanExcelService {
                     data: {
                       studyPlanId: plan.id,
                       subgroupNumber,
+                      partNumber: isWholeGroupSubject(row.subject) ? index + 1 : 0,
                       subgroupId: subgroup?.id ?? null,
                       teacherLabel: normalize(row.teacher),
                       totalHours: hours[index],

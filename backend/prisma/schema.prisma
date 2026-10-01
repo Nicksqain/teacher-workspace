@@ -13,6 +13,19 @@ generator client {
   output   = "../src/generated/prisma"
 }
 
+model StudyPlanChange {
+  id        String @id @default(uuid())
+  kind      String
+  targetId  String @map("target_id")
+  actorId   String @map("actor_id")
+  before    Json
+  after     Json
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([kind, targetId, createdAt])
+  @@map("study_plan_changes")
+}
+
 model User {
   id        String @id @default(uuid())
   email     String @unique
@@ -104,12 +117,13 @@ model StudyPlanAnnualHours {
   subject           Subject @relation(fields: [subjectId], references: [id], onDelete: Restrict)
   academicYear      String @map("academic_year")
   subgroupNumber    Int @default(0) @map("subgroup_number")
+  partNumber        Int @default(0) @map("part_number")
   teacherLabel      String @map("teacher_label")
   examHours         Int @default(0) @map("exam_hours")
   consultationHours Int @default(0) @map("consultation_hours")
   projectHours      Int @default(0) @map("project_hours")
 
-  @@unique([groupId, subjectId, academicYear, subgroupNumber])
+  @@unique([groupId, subjectId, academicYear, subgroupNumber, partNumber], map: "annual_hours_group_subject_year_subgroup_part_key")
   @@map("study_plan_annual_hours")
 }
 
@@ -156,6 +170,7 @@ model StudyPlanAssignment {
   studyPlan   StudyPlan @relation(fields: [studyPlanId], references: [id], onDelete: Restrict)
 
   subgroupNumber Int            @default(0) @map("subgroup_number")
+  partNumber     Int            @default(0) @map("part_number")
   subgroupId     String?        @map("subgroup_id")
   subgroup       StudySubgroup? @relation(fields: [subgroupId], references: [id], onDelete: Restrict)
 
@@ -170,6 +185,6 @@ model StudyPlanAssignment {
   totalHours   Int      @map("total_hours")
   lessons      Lesson[]
 
-  @@unique([studyPlanId, subgroupNumber])
+  @@unique([studyPlanId, subgroupNumber, partNumber], map: "plan_assignment_subgroup_part_key")
   @@map("study_plan_assignments")
 }

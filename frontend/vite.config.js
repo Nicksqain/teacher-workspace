@@ -9,6 +9,9 @@ export default defineConfig({
         schedule: fileURLToPath(
           new URL('./pages/schedule/index.html', import.meta.url),
         ),
+        studyPlans: fileURLToPath(
+          new URL('./pages/study-plans/index.html', import.meta.url),
+        ),
       },
     },
   },

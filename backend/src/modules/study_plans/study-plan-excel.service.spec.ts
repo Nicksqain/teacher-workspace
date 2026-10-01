@@ -11,10 +11,12 @@ function setup() {
     subject: { upsert: async () => ({ id: 's', name: 'Subject' }) },
     studySubgroup: { upsert: async ({ create }: any) => ({ id: `sub-${create.number}` }) },
     studyPlanAnnualHours: {
+      findMany: async () => [],
       count: async () => annual.length,
       create: async ({ data }: any) => { annual.push(data); return data; },
     },
     studyPlan: {
+      findMany: async () => [],
       findUnique: async () => null,
       create: async ({ data }: any) => ({ ...data, id: `plan-${data.semester}` }),
     },
@@ -33,10 +35,34 @@ function setup() {
     rows: [row, { ...row, sourceRow: 13, teacher: 'Teacher 2' }],
   };
   vi.spyOn(service, 'preview').mockResolvedValue(preview);
-  return { service, annual, assignments, transaction, preview };
+  return { service, annual, assignments, transaction, preview, tx };
 }
 
 describe('RUP annual hours import', () => {
+  it('keeps NVTP teachers in the whole group with separate hour allocations', async () => {
+    const { service, preview, annual, assignments } = setup();
+    preview.rows.forEach(row => { row.subject = 'Начальная военная и технологическая подготовка'; });
+    preview.rows[0].semester1Hours = 30;
+    preview.rows[0].semester2Hours = 66;
+    preview.rows[1].semester1Hours = 0;
+    preview.rows[1].semester2Hours = 36;
+    await service.importFile({ confirmed: true });
+    expect(assignments.map(row => row.totalHours)).toEqual([30, 66, 36]);
+    expect(assignments.every(row => row.subgroupNumber === 0 && row.subgroupId === null)).toBe(true);
+    expect(assignments.map(row => row.partNumber)).toEqual([1, 1, 2]);
+    expect(annual.map(row => row.subgroupNumber)).toEqual([0, 0]);
+    expect(annual.map(row => row.partNumber)).toEqual([1, 2]);
+  });
+  it('rejects an existing group/year even when spaces, dash or case change', async () => {
+    const { service, tx, preview, annual, assignments } = setup();
+    preview.rows.forEach(row => { row.groupName = 'пр – 1 – 26'; });
+    vi.spyOn(tx.studyPlan, 'findMany').mockResolvedValue([
+      { group: { name: 'ПР-1-26' } },
+    ] as never);
+    await expect(service.importFile({ confirmed: true })).rejects.toThrow('Повторный импорт запрещён');
+    expect(annual).toHaveLength(0);
+    expect(assignments).toHaveLength(0);
+  });
   it('keeps each subgroup annual load once, outside both semester assignments', async () => {
     const { service, annual, assignments } = setup();
     const result = await service.importFile({ confirmed: true });
