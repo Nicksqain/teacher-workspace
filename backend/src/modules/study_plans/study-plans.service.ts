@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Inject, Injectable } from "@nestjs/common";
 import { PrismaService } from "../../core/database/prisma.service";
 import { Prisma } from "../../generated/prisma/client";
-import { error, group } from "node:console";
+import { error,} from "node:console";
 
 
 @Injectable()
@@ -137,5 +137,21 @@ export class StudyPlanService {
 
             throw error;
         }
+    }
+    async semesters() {
+        return this.prisma.academicSemester.findMany({
+            include: {
+                group: {
+                    select: {
+                        id: true,
+                        name: true
+                    }
+                }
+            },
+            orderBy: [
+                {academicYear: 'asc'},
+                {number: 'asc'},
+            ]
+        });
     }
 }

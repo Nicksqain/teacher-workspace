@@ -93,7 +93,10 @@ export class ScheduleExcelService {
       if(current.fingerprint!==body.fingerprint)throw new ConflictException('Расписание изменилось. Выполните предпросмотр заново.');
       for(const item of current.rows){const {action,id,version,...data}=item;
         if(action==='create')await tx.lesson.create({data});
-        if(action==='update')await tx.lesson.update({where:{id},data});
+        if(action==='update') {
+          const old = existing.find(row => row.id === id);
+          await tx.lesson.update({where:{id},data:{...data,...(old?.subject !== data.subject ? {assignmentId:null,studyPlanId:null,academicHours:null} : {})}});
+        }
       }
       const lessons = await tx.lesson.findMany({where:{startsAt:{gte:new Date(`${day}T00:00:00+05:00`),lt:new Date(+new Date(`${day}T00:00:00+05:00`)+86400000)}}});
       return {...current.counts, date: day, lessons};

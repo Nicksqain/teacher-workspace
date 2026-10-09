@@ -14,10 +14,10 @@ generator client {
 }
 
 model StudyPlanChange {
-  id        String @id @default(uuid())
+  id        String   @id @default(uuid())
   kind      String
-  targetId  String @map("target_id")
-  actorId   String @map("actor_id")
+  targetId  String   @map("target_id")
+  actorId   String   @map("actor_id")
   before    Json
   after     Json
   createdAt DateTime @default(now()) @map("created_at")
@@ -90,19 +90,20 @@ model Lesson {
 }
 
 model StudyGroup {
-  id        String          @id @default(uuid())
-  name      String          @unique
-  plans     StudyPlan[]
-  subgroups StudySubgroup[]
-  annualHours StudyPlanAnnualHours[]
+  id                String                 @id @default(uuid())
+  name              String                 @unique
+  plans             StudyPlan[]
+  subgroups         StudySubgroup[]
+  annualHours       StudyPlanAnnualHours[]
+  academicSemesters AcademicSemester[]
 
   @@map("study_groups")
 }
 
 model Subject {
-  id    String      @id @default(uuid())
-  name  String      @unique
-  plans StudyPlan[]
+  id          String                 @id @default(uuid())
+  name        String                 @unique
+  plans       StudyPlan[]
   annualHours StudyPlanAnnualHours[]
 
   @@map("subjects")
@@ -110,18 +111,18 @@ model Subject {
 
 // Annual source hours; no semester is inferred from the workbook.
 model StudyPlanAnnualHours {
-  id                String @id @default(uuid())
-  groupId           String @map("group_id")
+  id                String     @id @default(uuid())
+  groupId           String     @map("group_id")
   group             StudyGroup @relation(fields: [groupId], references: [id], onDelete: Restrict)
-  subjectId         String @map("subject_id")
-  subject           Subject @relation(fields: [subjectId], references: [id], onDelete: Restrict)
-  academicYear      String @map("academic_year")
-  subgroupNumber    Int @default(0) @map("subgroup_number")
-  partNumber        Int @default(0) @map("part_number")
-  teacherLabel      String @map("teacher_label")
-  examHours         Int @default(0) @map("exam_hours")
-  consultationHours Int @default(0) @map("consultation_hours")
-  projectHours      Int @default(0) @map("project_hours")
+  subjectId         String     @map("subject_id")
+  subject           Subject    @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  academicYear      String     @map("academic_year")
+  subgroupNumber    Int        @default(0) @map("subgroup_number")
+  partNumber        Int        @default(0) @map("part_number")
+  teacherLabel      String     @map("teacher_label")
+  examHours         Int        @default(0) @map("exam_hours")
+  consultationHours Int        @default(0) @map("consultation_hours")
+  projectHours      Int        @default(0) @map("project_hours")
 
   @@unique([groupId, subjectId, academicYear, subgroupNumber, partNumber], map: "annual_hours_group_subject_year_subgroup_part_key")
   @@map("study_plan_annual_hours")
@@ -135,6 +136,7 @@ model StudyPlan {
   subject      Subject               @relation(fields: [subjectId], references: [id])
   assignments  StudyPlanAssignment[]
   academicYear String?
+  semesters    AcademicSemester[]
   semester     Int?
   weeks        Int?
   period       String
@@ -187,4 +189,19 @@ model StudyPlanAssignment {
 
   @@unique([studyPlanId, subgroupNumber, partNumber], map: "plan_assignment_subgroup_part_key")
   @@map("study_plan_assignments")
+}
+
+model AcademicSemester {
+  id           String     @id @default(uuid())
+  groupId      String     @map("group_id")
+  group        StudyGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  academicYear String     @map("academic_year")
+  number       Int
+  startsOn     String     @map("starts_on")
+  endsOn       String     @map("ends_on")
+  studyPlan    StudyPlan? @relation(fields: [studyPlanId], references: [id])
+  studyPlanId  String?
+
+  @@unique([groupId, academicYear, number])
+  @@map("academic_semester")
 }

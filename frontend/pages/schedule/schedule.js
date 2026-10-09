@@ -1,4 +1,5 @@
 import { teachersOf } from './conflicts.js';
+import { installRupLink } from './rup-link.js';
 import {
   filterTeacherGroupsByName,
   withoutTeachers,
@@ -15,6 +16,17 @@ let selectedCourse = '1';
 let allLessons = [];
 let editingId = null;
 let saving = false;
+
+installRupLink({
+  getLessons: () => allLessons,
+  getDate: () => schedule?.date,
+  applyLessons: (updated) => {
+    const ids = new Set(updated.map(lesson => lesson.id));
+    allLessons = [...allLessons.filter(lesson => !ids.has(lesson.id)), ...updated];
+    arrangeLessons();
+    render();
+  },
+});
 
 function element(tag, text, className) {
   const node = document.createElement(tag);
@@ -120,6 +132,7 @@ function render() {
             element('h3', lesson.subject),
             element('p', `Аудитория: ${lesson.room}`),
           );
+          if (lesson.assignmentId) card.append(element('span', 'РУП · 2 ч', 'rup-linked-badge'));
           const warnings = conflicts.get(lesson.id) ?? [];
           if (warnings.length) {
             const teacher = warnings.some(

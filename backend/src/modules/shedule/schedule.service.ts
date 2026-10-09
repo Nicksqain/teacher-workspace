@@ -77,9 +77,12 @@ export class ScheduleService {
         const data = parseLesson(body);
 
         try {
-            return await this.prisma.lesson.update({
-                where: {id},
-                data,
+            return await this.prisma.$transaction(async tx => {
+                const original = await tx.lesson.findUnique({where: {id}});
+                if (!original) throw new NotFoundException('Занятие не найдено');
+                const day = (date: Date) => new Date(+date + 5 * 3600000).toISOString().slice(0, 10);
+                const invalidate = original.subject !== data.subject || original.groupName !== data.groupName || day(original.startsAt) !== day(data.startsAt);
+                return tx.lesson.update({where:{id}, data: {...data, ...(invalidate ? {assignmentId:null, studyPlanId:null, academicHours:null} : {})}});
             });
         } catch(e) {
             this.handleError(e);

@@ -5,6 +5,16 @@
   line-height: 1.5;
   font-synthesis: none;
 }
+.rup-link-dialog { width: min(1000px, calc(100% - 32px)); max-height: 88vh; padding: 24px; border: 1px solid #dce3ee; border-radius: 16px; color: #213047; }
+.rup-link-dialog::backdrop { background: #16203199; }
+.rup-link-filters { display: flex; gap: 12px; flex-wrap: wrap; }
+.rup-link-row { padding: 18px 0; border-top: 1px solid #dce3ee; }
+.rup-link-row h3 { font-size: 15px; }
+.rup-link-row label { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 12px 0; font-size: 13px; }
+.rup-link-dialog select, .rup-link-row input:not([type='checkbox']) { max-width: 100%; padding: 8px; border: 1px solid #dce3ee; border-radius: 8px; font: inherit; }
+.rup-link-row select { width: 100%; }
+.rup-link-dialog [hidden] { display: none !important; }
+.rup-linked-badge { font-size: 10px; color: #6655b8; font-weight: 600; }
 * {
   box-sizing: border-box;
 }

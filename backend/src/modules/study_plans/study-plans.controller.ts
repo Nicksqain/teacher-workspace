@@ -5,6 +5,7 @@ import { RolesGuard } from "../../auth/guards/roles.guard";
 import { Roles } from "../../auth/decorators/roles.decorator";
 import { StudyPlanService } from './study-plans.service';
 import { StudyPlanExcelService } from "./study-plan-excel.service";
+import { StudyPlanLinkService } from "./study-plan-link.service";
 
 
 @Controller('study-plans')
@@ -15,12 +16,25 @@ export class StudyPlanController {
         @Inject(StudyPlanService)
         private readonly plans: StudyPlanService,
         @Inject(StudyPlanExcelService)
-        private readonly excel: StudyPlanExcelService
+        private readonly excel: StudyPlanExcelService,
+        @Inject(StudyPlanLinkService)
+        private readonly linker: StudyPlanLinkService,
     ) {}
 
     @Get() 
     findAll(@Query('groupId') groupId?: string) {
         return this.plans.findAll(groupId);
+    }
+
+    @Get('semesters')
+    semester() {
+        return this.plans.semesters
+    }
+
+    @Post('link-lesson')
+    @Roles('ADMIN')
+    linkLesson(@Body() body: unknown, @Req() req: {user: {id: string}}) {
+        return this.linker.link(body, req.user.id)
     }
 
     @Post('edit/:kind/:id')
